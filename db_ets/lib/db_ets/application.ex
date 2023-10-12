@@ -13,7 +13,6 @@ defmodule DbEts.Application do
 
       # Uncomment this line to automatically start DbEts genserver.
       # {DbEts, []},
-
       DbEts.Telemetry
     ]
 

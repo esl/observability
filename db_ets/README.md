@@ -1,21 +1,20 @@
 # DbEts
 
-**TODO: Add description**
+Example project implementing simple database using ETS table.
+Contains pre-configured telemetry together with different examples:
+ - fetching VM metrics from telemetry_poller
+ - using telemetry_poller to periodically fetch metrics
+ - using TelemetryMetricsPrometheus library to report metrics to the Prometheus instance
 
-## Installation
+For convinience there is alos docker-compose file together with configuration
+to set up Grafana with Prometheus datasource.
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `db_ets` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:db_ets, "~> 0.1.0"}
-  ]
-end
+To start detached containers:
+```bash
+docker-compose up -d
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/db_ets>.
-
+To stop containers and remove volumes:
+```bash
+docker-compose down -v
+```

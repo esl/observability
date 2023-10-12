@@ -47,8 +47,9 @@ defmodule DbEts.Telemetry do
 
   defp periodic_measurments do
     [
-      # Example of how to set up custome telemetry periodic measurments
-      {Measurments, :dispatch_record_count, []}
+      # Example of how to set up custome telemetry periodic measurments,
+      # uncomment together with automatic DbEts module startup in application.ex
+      # {Measurments, :dispatch_record_count, []}
     ]
   end
 end
