@@ -1,4 +1,4 @@
-defmodule DbEtsEx do
+defmodule DbEts do
   @moduledoc """
   GenServer implementing simple database using ETS table.
   """
@@ -24,6 +24,10 @@ defmodule DbEtsEx do
 
   def read(key) do
     GenServer.call(__MODULE__, {:read, key})
+  end
+
+  def count do
+    GenServer.call(__MODULE__, :count)
   end
 
   def match(element) do
@@ -79,5 +83,17 @@ defmodule DbEtsEx do
       |> List.flatten()
 
     {:reply, reply, state}
+  end
+
+  def handle_call(:count, from, state) do
+    Process.spawn(
+      fn ->
+        count = :ets.tab2list(@table_name) |> Enum.count()
+        GenServer.reply(from, count)
+      end,
+      []
+    )
+
+    {:noreply, state}
   end
 end
