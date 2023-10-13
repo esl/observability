@@ -10,11 +10,11 @@ defmodule DbEts.Telemetry do
   @impl true
   def init(_arg) do
     children = [
-      {:telemetry_poller, measurements: periodic_measurments(), period: 10_000, name: :db_ets}
+      {:telemetry_poller, measurements: periodic_measurments(), period: 10_000, name: :db_ets},
       # Uncomment below line to send telemetry events to the console.
       # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()},
       # Uncoment below linve to spint up Prometheus server and enable metrics on http://localhost:9568
-      # {TelemetryMetricsPrometheus, [metrics: metrics()]}
+      {TelemetryMetricsPrometheus, [metrics: metrics()]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
@@ -35,10 +35,17 @@ defmodule DbEts.Telemetry do
         unit: {:native, :millisecond}
       ),
       # custome metrics
-      last_value([:db_ets, :records, :count]),
+      last_value("db_ets.records.count"),
+      counter("db_ets.records.write.count"),
+      distribution("db_ets.records.read.stop.duration",
+        reporter_options: [buckets: [0.1, 0.2, 0.3, 0.4, 1]],
+        measurement: :duration,
+        unit: {:native, :millisecond},
+        tags: [:name]
+      ),
 
       # Telemetry Poller VM metrics
-      last_value("vm.memory.total", unit: :byte),
+      last_value("vm.memory.total", unit: :megabyte),
       last_value("vm.total_run_queue_lengths.total"),
       last_value("vm.total_run_queue_lengths.cpu"),
       last_value("vm.total_run_queue_lengths.io")
@@ -49,7 +56,7 @@ defmodule DbEts.Telemetry do
     [
       # Example of how to set up custome telemetry periodic measurments,
       # uncomment together with automatic DbEts module startup in application.ex
-      # {Measurments, :dispatch_record_count, []}
+      {Measurments, :dispatch_record_count, []}
     ]
   end
 end

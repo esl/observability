@@ -3,6 +3,7 @@ defmodule DbEts do
   GenServer implementing simple database using ETS table.
   """
   use GenServer
+  alias DbEts.Measurments
 
   @table_name :db_ex
 
@@ -48,6 +49,7 @@ defmodule DbEts do
   @impl true
   def handle_cast({:write, key, element}, state) do
     :ets.insert(@table_name, {key, element})
+    Measurments.dispatch_record_write()
     {:noreply, state}
   end
 
@@ -64,13 +66,15 @@ defmodule DbEts do
 
   @impl true
   def handle_call({:read, key}, _from, state) do
-    reply =
+    read_function =
       @table_name
       |> :ets.lookup(key)
       |> case do
         [] -> {:error, :not_found}
         [{^key, value}] -> {:ok, value}
       end
+
+    reply = Measurments.dispatch_record_read(read_function)
 
     {:reply, reply, state}
   end
