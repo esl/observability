@@ -1,0 +1,23 @@
+{"1.2.0",
+[{<<"accept">>,{pkg,<<"accept">>,<<"0.3.4">>},1},
+ {<<"prometheus">>,
+  {git,"https://github.com/deadtrickster/prometheus.erl",
+       {ref,"b78e17eda43c7fcb2c05f76c7dd80db969cd8479"}},
+  0},
+ {<<"prometheus_httpd">>,
+  {git,"https://github.com/deadtrickster/prometheus-httpd",
+       {ref,"b1ae3bc1e81df6bc1a92083cca6476490045345c"}},
+  0},
+ {<<"quantile_estimator">>,{pkg,<<"quantile_estimator">>,<<"0.2.1">>},1},
+ {<<"telemetry">>,
+  {git,"https://github.com/beam-telemetry/telemetry",
+       {ref,"80c7eb7ed620b7e0aff1c38586901c71d3565308"}},
+  0}]}.
+[
+{pkg_hash,[
+ {<<"accept">>, <<"E3A25CBB1F6B51EE5F23D854B72F5A6FC97B42FE7E9FD8290DAA334D59311C64">>},
+ {<<"quantile_estimator">>, <<"EF50A361F11B5F26B5F16D0696E46A9E4661756492C981F7B2229EF42FF1CD15">>}]},
+{pkg_hash_ext,[
+ {<<"accept">>, <<"B6AEC8EBE3D0B0D306633CDFD4CFAE4E6748549ABC7C3C7E9FA85EE0793AD225">>},
+ {<<"quantile_estimator">>, <<"282A8A323CA2A845C9E6F787D166348F776C1D4A41EDE63046D72D422E3DA946">>}]}
+].
