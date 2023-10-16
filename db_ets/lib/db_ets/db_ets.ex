@@ -27,10 +27,6 @@ defmodule DbEts do
     GenServer.call(__MODULE__, {:read, key})
   end
 
-  def count do
-    GenServer.call(__MODULE__, :count)
-  end
-
   def match(element) do
     GenServer.call(__MODULE__, {:match, element})
   end
@@ -56,6 +52,7 @@ defmodule DbEts do
   @impl true
   def handle_cast({:delete, key}, state) do
     :ets.delete(@table_name, key)
+    Measurments.dispatch_record_delete()
     {:noreply, state}
   end
 
@@ -66,7 +63,9 @@ defmodule DbEts do
 
   @impl true
   def handle_call({:read, key}, _from, state) do
-    read_function =
+    start = System.monotonic_time()
+
+    reply =
       @table_name
       |> :ets.lookup(key)
       |> case do
@@ -74,7 +73,8 @@ defmodule DbEts do
         [{^key, value}] -> {:ok, value}
       end
 
-    reply = Measurments.dispatch_record_read(read_function)
+    duration = System.monotonic_time() - start
+    Measurments.dispatch_record_read(duration)
 
     {:reply, reply, state}
   end
@@ -87,17 +87,5 @@ defmodule DbEts do
       |> List.flatten()
 
     {:reply, reply, state}
-  end
-
-  def handle_call(:count, from, state) do
-    Process.spawn(
-      fn ->
-        count = :ets.tab2list(@table_name) |> Enum.count()
-        GenServer.reply(from, count)
-      end,
-      []
-    )
-
-    {:noreply, state}
   end
 end

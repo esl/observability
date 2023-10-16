@@ -84,10 +84,10 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": true,
-          "expr": "db_ets_records_read_stop_duration_bucket",
+          "expr": "histogram_quantile(0.99, sum by(le) (rate(db_ets_records_read_duration_bucket[1m])))",
           "format": "time_series",
           "fullMetaSearch": false,
-          "includeNullMetadata": true,
+          "includeNullMetadata": false,
           "instant": false,
           "legendFormat": "{{ le }}",
           "range": true,
@@ -96,6 +96,26 @@
         }
       ],
       "title": "DB Reads Times",
+      "transformations": [
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "greater",
+                  "options": {
+                    "value": 0
+                  }
+                },
+                "fieldName": "Value"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        }
+      ],
       "type": "histogram"
     },
     {

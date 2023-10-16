@@ -1,7 +1,6 @@
 defmodule DbEts.Telemetry do
   use Supervisor
   import Telemetry.Metrics
-  alias DbEts.Measurments
 
   def start_link(arg) do
     Supervisor.start_link(__MODULE__, arg, name: __MODULE__)
@@ -34,14 +33,15 @@ defmodule DbEts.Telemetry do
         end,
         unit: {:native, :millisecond}
       ),
-      # custome metrics
-      last_value("db_ets.records.count"),
-      counter("db_ets.records.write.count"),
-      distribution("db_ets.records.read.stop.duration",
-        reporter_options: [buckets: [0.1, 0.2, 0.3, 0.4, 1]],
+      # custom metrics
+      sum("db_ets.records.count", reporter_options: [prometheus_type: :gauge]),
+      sum("db_ets.records.write.count", reporter_options: [prometheus_type: :counter]),
+      distribution("db_ets.records.read.duration",
+        reporter_options: [
+          buckets: [0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1]
+        ],
         measurement: :duration,
-        unit: {:native, :millisecond},
-        tags: [:name]
+        unit: {:native, :millisecond}
       ),
 
       # Telemetry Poller VM metrics
@@ -53,10 +53,6 @@ defmodule DbEts.Telemetry do
   end
 
   defp periodic_measurments do
-    [
-      # Example of how to set up custome telemetry periodic measurments,
-      # uncomment together with automatic DbEts module startup in application.ex
-      {Measurments, :dispatch_record_count, []}
-    ]
+    []
   end
 end
