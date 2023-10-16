@@ -40,6 +40,7 @@ defmodule DbEts.Telemetry do
         reporter_options: [
           buckets: [0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1]
         ],
+        event_name: [:db_ets, :records, :read, :stop],
         measurement: :duration,
         unit: {:native, :millisecond}
       ),

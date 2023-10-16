@@ -3,7 +3,6 @@ defmodule DbEts do
   GenServer implementing simple database using ETS table.
   """
   use GenServer
-  alias DbEts.Measurments
 
   @table_name :db_ex
 
@@ -45,14 +44,15 @@ defmodule DbEts do
   @impl true
   def handle_cast({:write, key, element}, state) do
     :ets.insert(@table_name, {key, element})
-    Measurments.dispatch_record_write()
+    :telemetry.execute([:db_ets, :records], %{count: 1}, %{})
+    :telemetry.execute([:db_ets, :records, :write], %{count: 1}, %{})
     {:noreply, state}
   end
 
   @impl true
   def handle_cast({:delete, key}, state) do
     :ets.delete(@table_name, key)
-    Measurments.dispatch_record_delete()
+    :telemetry.execute([:db_ets, :records], %{count: -1}, %{})
     {:noreply, state}
   end
 
@@ -63,9 +63,7 @@ defmodule DbEts do
 
   @impl true
   def handle_call({:read, key}, _from, state) do
-    start = System.monotonic_time()
-
-    reply =
+    read_function =
       @table_name
       |> :ets.lookup(key)
       |> case do
@@ -73,8 +71,7 @@ defmodule DbEts do
         [{^key, value}] -> {:ok, value}
       end
 
-    duration = System.monotonic_time() - start
-    Measurments.dispatch_record_read(duration)
+    reply = :telemetry.span([:db_ets, :records, :read], %{}, fn -> {read_function, %{}} end)
 
     {:reply, reply, state}
   end
