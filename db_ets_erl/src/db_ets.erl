@@ -16,7 +16,7 @@ stop() ->
 
 init(_Args) ->
     start_prometheus(),
-    start_prometheus_metrics(),
+    declare_prometheus_metrics(),
     attach_telemetry(),
     {ok, ets:new(db, [named_table, set])}.
 
@@ -24,8 +24,6 @@ terminate(_Reason, _LoopData) ->
     ets:delete(db).
 
 write(Key, Element) ->
-    telemetry:execute([db_ets, write, request], #{count => 1}, #{}),
-    %telemetry:span %has more 
     gen_server:cast(?MODULE, {write, Key, Element}).
 
 delete(Key) ->
@@ -39,20 +37,30 @@ match(Element) ->
 
 handle_cast({write, Key, Element}, LoopData) ->
     ets:insert(db, {Key, Element}),
+    telemetry:execute([db_ets, write, request], #{count => 1}, #{}),
     {noreply, LoopData};
 
 handle_cast({delete, Key}, LoopData) ->
     ets:delete(db, Key),
+    telemetry:execute([db_ets, db_elements, event], #{count => -1}, #{}),
     {noreply, LoopData};
 
 handle_cast(stop, LoopData) ->
     {stop, normal, LoopData}.
 
 handle_call({read, Key}, _From, LoopData) ->
-    Reply = case ets:lookup(db, Key) of
-		[] -> {error, instance};
-		[{Key, Value}] -> {ok, Value}
-	    end,
+    SpanFun =
+        fun() ->
+            Reply = case ets:lookup(db, Key) of
+                            [] -> {error, instance};
+                            [{Key, Value}] -> {ok, Value}
+                    end, {Reply, #{}}
+        end,
+    Reply = telemetry:span([db_ets, read], #{}, SpanFun),
+    %Reply = case ets:lookup(db, Key) of
+    %            [] -> {error, instance};
+    %            [{Key, Value}] -> {ok, Value}
+    %        end,
     {reply, Reply, LoopData};
 
 handle_call({match, Element}, _From, LoopData) ->
@@ -67,37 +75,38 @@ start_prometheus() ->
     prometheus_httpd:start(),
     prometheus_http_impl:setup().
 
-start_prometheus_metrics() ->
+declare_prometheus_metrics() ->
     prometheus_counter:declare([{name, db_ets_write_count},
                                 {labels, []},
                                 {help, "Number of writes"}]),
     prometheus_gauge:declare([{name, db_ets_db_elements_gauge},
                               {labels, []},
-                              {help, "Size of ets_db"}]).
-    %% add histogram
-    %% prometheus_histogram:declare([{name, db_ets_read_duration_microseconds},
-    %%                               {buckets, {5, 10, 20, 40, 80}},
-    %%                               {labels, []},
-    %%                               {help, "Duration to read from db_ets"}]).
+                              {help, "Size of ets_db"}]),
+    prometheus_histogram:declare([{name, db_ets_read_duration_microseconds},
+                                  {buckets, [5, 10, 20, 40, 80]},
+                                  {labels, []},
+                                  {help, "Duration to read from db_ets"}]).
 
 attach_telemetry() ->
     ok = telemetry:attach_many(
         <<"db_ets-handlers">>,
         [
-         %[db_ets, read, start],
-         %[db_ets, read, stop],
-         %[db_ets, read, exception],
          [db_ets, write, request],
-         [db_ets, db_elements, add],
-         [db_ets, db_elements, remove]
+         [db_ets, db_elements, event],
+         [db_ets, read, start],
+         [db_ets, read, stop],
+         [db_ets, read, exception]
         ],
         fun ?MODULE:handle_telemetry_event/4,
         #{}
        ).
 
 handle_telemetry_event([db_ets, write, request], #{count := Count}, #{}, _Config) ->
-    prometheus_counter:inc(db_ets_write_count, [], Count);
-handle_telemetry_event([db_ets, db_elements, add], #{count := Count}, #{}, _Config) ->
-    prometheus_gauge:inc(amoc_scenario_user_count, [], Count);
-handle_telemetry_event([db_ets, db_elements, remove], #{count := Count}, #{}, _Config) ->
-    prometheus_gauge:dec(amoc_scenario_user_count, [], Count).
+    prometheus_counter:inc(db_ets_write_count, [], Count),
+    prometheus_gauge:inc(db_ets_db_elements_gauge, [], Count);
+handle_telemetry_event([db_ets, db_elements, event], #{count := Count}, #{}, _Config) ->
+    prometheus_gauge:dec(db_ets_db_elements_gauge, [], Count);
+handle_telemetry_event([db_ets, read, stop], #{duration := Duration}, #{}, _Config) ->
+    prometheus_histogram:observe(db_ets_read_duration_microseconds, [], Duration);
+handle_telemetry_event(_, #{}, #{}, _Config) ->
+    ok.
