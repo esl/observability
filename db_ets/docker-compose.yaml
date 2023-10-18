@@ -10,6 +10,8 @@ services:
     volumes:
       - ./grafana/prometheus:/etc/prometheus
       - prom_data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   grafana:
     image: grafana/grafana
     container_name: grafana
