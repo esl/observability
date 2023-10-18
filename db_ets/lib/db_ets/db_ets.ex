@@ -1,4 +1,4 @@
-defmodule DbEtsEx do
+defmodule DbEts do
   @moduledoc """
   GenServer implementing simple database using ETS table.
   """
@@ -44,12 +44,15 @@ defmodule DbEtsEx do
   @impl true
   def handle_cast({:write, key, element}, state) do
     :ets.insert(@table_name, {key, element})
+    :telemetry.execute([:db_ets, :records], %{count: 1}, %{})
+    :telemetry.execute([:db_ets, :records, :write], %{count: 1}, %{})
     {:noreply, state}
   end
 
   @impl true
   def handle_cast({:delete, key}, state) do
     :ets.delete(@table_name, key)
+    :telemetry.execute([:db_ets, :records], %{count: -1}, %{})
     {:noreply, state}
   end
 
@@ -60,13 +63,15 @@ defmodule DbEtsEx do
 
   @impl true
   def handle_call({:read, key}, _from, state) do
-    reply =
+    read_function =
       @table_name
       |> :ets.lookup(key)
       |> case do
         [] -> {:error, :not_found}
         [{^key, value}] -> {:ok, value}
       end
+
+    reply = :telemetry.span([:db_ets, :records, :read], %{}, fn -> {read_function, %{}} end)
 
     {:reply, reply, state}
   end
